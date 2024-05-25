@@ -2,6 +2,7 @@ package com.github.hubcreator.emojihub
 
 import java.io.FileNotFoundException
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
@@ -11,11 +12,23 @@ import org.junit.jupiter.params.provider.MethodSource
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EmojiCheckerTest {
+    private val hello = "hello"
 
     @ParameterizedTest
     @MethodSource("emojiProvider")
-    fun testEmoji(emoji: String) {
-        assertThat(EmojiChecker.containsEmoji(emoji)).isTrue()
+    fun containsEmoji(emoji: String) {
+        assertThat(EmojiChecker.containsEmoji(emoji + hello)).isTrue()
+    }
+
+    @ParameterizedTest
+    @MethodSource("emojiProvider")
+    fun removeEmojis(emoji: String) {
+        assertThat(EmojiChecker.removeEmojis(hello + emoji + hello)).isEqualTo(hello + hello)
+    }
+
+    @Test
+    fun test() {
+        assertThat(EmojiChecker.removeEmojis("#⃣" + "hello")).isEqualTo("hello")
     }
 
     private fun emojiProvider(): List<String> {
