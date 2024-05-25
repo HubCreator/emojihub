@@ -7,5 +7,6 @@ import org.springframework.boot.runApplication
 class EmojihubApplication
 
 fun main(args: Array<String>) {
+
     runApplication<EmojihubApplication>(*args)
 }
