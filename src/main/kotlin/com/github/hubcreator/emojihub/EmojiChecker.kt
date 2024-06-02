@@ -1,7 +1,6 @@
 package com.github.hubcreator.emojihub
 
 object EmojiChecker {
-
     private val emojiRanges = listOf(
         0x1F600..0x1F64F, // Emoticons
         0x1F300..0x1F5FF, // Miscellaneous Symbols and Pictographs
@@ -139,6 +138,51 @@ object EmojiChecker {
 
             // keycap 이나 이모지가 아닌 경우 문자 추가
             result.append(Character.toChars(codePoint))
+            i += charCount
+        }
+        return result.toString()
+    }
+
+    fun extractEmojis(input: String): String {
+        val result = StringBuilder()
+        var i = 0
+        while (i < input.length) {
+            val codePoint = input.codePointAt(i)
+            var charCount = Character.charCount(codePoint)
+
+            // 키캡 시퀀스를 확인하고 추출
+            if (i + charCount < input.length) {
+                val nextCodePoint = input.codePointAt(i + charCount)
+                val nextCharCount = Character.charCount(nextCodePoint)
+
+                // 변형 선택자를 포함하여 키캡 시퀀스 확인
+                if (nextCodePoint == 0xFE0F && i + charCount + nextCharCount < input.length) {
+                    val thirdCodePoint = input.codePointAt(i + charCount + nextCharCount)
+                    if (keycapSequences.contains(Pair(codePoint, thirdCodePoint))) {
+                        result.append(String(Character.toChars(codePoint)))
+                        result.append(String(Character.toChars(nextCodePoint))) // 변형 선택자 추가
+                        result.append(String(Character.toChars(thirdCodePoint)))
+                        i += charCount + nextCharCount + Character.charCount(thirdCodePoint)
+                        continue
+                    }
+                }
+
+                // 일반 키캡 시퀀스 확인
+                if (keycapSequences.contains(Pair(codePoint, nextCodePoint))) {
+                    result.append(String(Character.toChars(codePoint)))
+                    result.append(String(Character.toChars(nextCodePoint)))
+                    i += charCount + nextCharCount
+                    continue
+                }
+            }
+
+            // 일반 이모지 확인하고 추출
+            if (emojiRanges.any { codePoint in it }) {
+                result.append(String(Character.toChars(codePoint)))
+                i += charCount
+                continue
+            }
+
             i += charCount
         }
         return result.toString()
