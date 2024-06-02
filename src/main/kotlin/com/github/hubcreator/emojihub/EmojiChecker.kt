@@ -1,7 +1,7 @@
 package com.github.hubcreator.emojihub
 
 object EmojiChecker {
-    private val emojiRanges = listOf(
+    private val emojiRanges = setOf(
         0x1F600..0x1F64F, // Emoticons
         0x1F300..0x1F5FF, // Miscellaneous Symbols and Pictographs
         0x1F680..0x1F6FF, // Transport and Map Symbols
@@ -65,17 +65,10 @@ object EmojiChecker {
         var i = 0
         while (i < input.length) {
             val codePoint = input.codePointAt(i)
-            if (isEmoji(codePoint)) {
-                return true
-            }
-            // Check for keycap sequences
-            if (i + 1 < input.length) {
-                val nextCodePoint = input.codePointAt(i + 1)
-                if (isKeycapSequence(codePoint, nextCodePoint)) {
-                    return true
-                }
-            }
-            i += Character.charCount(codePoint)
+            if (isEmoji(codePoint)) return true
+            val nextIndex = i + Character.charCount(codePoint)
+            if (nextIndex < input.length && isKeycapSequence(codePoint, input.codePointAt(nextIndex))) return true
+            i = nextIndex
         }
         return false
     }
@@ -87,56 +80,28 @@ object EmojiChecker {
             val codePoint = input.codePointAt(i)
             val charCount = Character.charCount(codePoint)
 
-            // 특수 국기 이모지 시퀀스 검사 및 처리
-            if (codePoint == 0x1F3F4 && i + charCount < input.length) { // 흑색 깃발 시작 확인
-                var sequenceEnd = i + charCount
-                var isFlagSequence = true
-
-                // 최대 국기 시퀀스 길이까지 확인
-                while (sequenceEnd < input.length && isFlagSequence) {
-                    val nextCodePoint = input.codePointAt(sequenceEnd)
-                    if (nextCodePoint !in 0xE0067..0xE007F) { // 특정 지역 지시자 코드 범위를 벗어나면 중단
-                        isFlagSequence = false
-                        continue
-                    }
-                    sequenceEnd += Character.charCount(nextCodePoint)
-                }
-
-                // 전체 국기 시퀀스를 건너뛰기
-                if (isFlagSequence) {
-                    i = sequenceEnd
-                    continue
-                }
-            }
-
-            // keycap 시퀀스 검사 및 처리
+            // Check for keycap sequences, ensuring to consider the Variation Selector-16 (0xFE0F) which may follow the initial characters
             if (i + charCount < input.length) {
                 val nextCodePoint = input.codePointAt(i + charCount)
-                val nextCharCount = Character.charCount(nextCodePoint)
-
-                // Variation Selector가 있는 경우 다음 코드 포인트를 확인
-                if (nextCodePoint == 0xFE0F && i + charCount + nextCharCount < input.length) {
-                    val thirdCodePoint = input.codePointAt(i + charCount + nextCharCount)
-                    if (isKeycapSequence(codePoint, thirdCodePoint)) {
-                        i += charCount + nextCharCount + Character.charCount(thirdCodePoint)
+                if (nextCodePoint == 0xFE0F && i + charCount + 1 < input.length) {
+                    val followingCodePoint = input.codePointAt(i + charCount + 1)
+                    if (isKeycapSequence(codePoint, followingCodePoint)) {
+                        i += charCount + 1 + Character.charCount(followingCodePoint) // Skip keycap sequence including variation selector
                         continue
                     }
-                }
-
-                // 일반 keycap 시퀀스 검사
-                if (isKeycapSequence(codePoint, nextCodePoint)) {
-                    i += charCount + nextCharCount
+                } else if (isKeycapSequence(codePoint, nextCodePoint)) {
+                    i += charCount + Character.charCount(nextCodePoint) // Skip keycap sequence without variation selector
                     continue
                 }
             }
 
-            // 일반 이모지 검사 및 처리
+            // Check for other emojis
             if (isEmoji(codePoint)) {
-                i += charCount
+                i += charCount // Skip emoji
                 continue
             }
 
-            // keycap 이나 이모지가 아닌 경우 문자 추가
+            // Add non-emoji characters to the result
             result.append(Character.toChars(codePoint))
             i += charCount
         }
@@ -150,34 +115,30 @@ object EmojiChecker {
             val codePoint = input.codePointAt(i)
             var charCount = Character.charCount(codePoint)
 
-            // 키캡 시퀀스를 확인하고 추출
+            // Handling keycap sequences
             if (i + charCount < input.length) {
                 val nextCodePoint = input.codePointAt(i + charCount)
-                val nextCharCount = Character.charCount(nextCodePoint)
-
-                // 변형 선택자를 포함하여 키캡 시퀀스 확인
-                if (nextCodePoint == 0xFE0F && i + charCount + nextCharCount < input.length) {
-                    val thirdCodePoint = input.codePointAt(i + charCount + nextCharCount)
-                    if (keycapSequences.contains(Pair(codePoint, thirdCodePoint))) {
+                // Check for Variation Selector-16 following the initial character
+                if (nextCodePoint == 0xFE0F && i + charCount + 1 < input.length) {
+                    val thirdCodePoint = input.codePointAt(i + charCount + 1)
+                    if (isKeycapSequence(codePoint, thirdCodePoint)) {
                         result.append(String(Character.toChars(codePoint)))
-                        result.append(String(Character.toChars(nextCodePoint))) // 변형 선택자 추가
+                        result.append(String(Character.toChars(nextCodePoint))) // Include the Variation Selector
                         result.append(String(Character.toChars(thirdCodePoint)))
-                        i += charCount + nextCharCount + Character.charCount(thirdCodePoint)
+                        i += charCount + 1 + Character.charCount(thirdCodePoint)
                         continue
                     }
                 }
-
-                // 일반 키캡 시퀀스 확인
-                if (keycapSequences.contains(Pair(codePoint, nextCodePoint))) {
+                if (isKeycapSequence(codePoint, nextCodePoint)) {
                     result.append(String(Character.toChars(codePoint)))
                     result.append(String(Character.toChars(nextCodePoint)))
-                    i += charCount + nextCharCount
+                    i += charCount + Character.charCount(nextCodePoint)
                     continue
                 }
             }
 
-            // 일반 이모지 확인하고 추출
-            if (emojiRanges.any { codePoint in it }) {
+            // Handling regular emojis
+            if (isEmoji(codePoint)) {
                 result.append(String(Character.toChars(codePoint)))
                 i += charCount
                 continue
@@ -187,12 +148,10 @@ object EmojiChecker {
         }
         return result.toString()
     }
+    
+    private fun isKeycapSequence(first: Int, second: Int): Boolean =
+        keycapSequences.contains(Pair(first, second))
 
-    private fun isEmoji(codePoint: Int): Boolean {
-        return emojiRanges.any { range -> codePoint in range }
-    }
-
-    private fun isKeycapSequence(first: Int, second: Int): Boolean {
-        return keycapSequences.contains(Pair(first, second))
-    }
+    private fun isEmoji(codePoint: Int): Boolean =
+        emojiRanges.any { range -> codePoint in range }
 }

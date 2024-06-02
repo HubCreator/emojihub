@@ -12,27 +12,27 @@ import org.junit.jupiter.params.provider.MethodSource
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EmojiCheckerTest {
-    private val hello = "hello"
+    private val tmp = "hello"
 
     @ParameterizedTest
     @MethodSource("emojiProvider")
     @DisplayName("containsEmoji")
     fun containsEmoji(emoji: String) {
-        assertThat(EmojiChecker.containsEmoji(emoji + hello)).isTrue()
+        assertThat(EmojiChecker.containsEmoji("$emoji $tmp")).isTrue()
     }
 
     @ParameterizedTest
     @MethodSource("emojiProvider")
     @DisplayName("removeEmojis")
     fun removeEmojis(emoji: String) {
-        assertThat(EmojiChecker.removeEmojis("$hello$emoji$hello")).isEqualTo("$hello$hello")
+        assertThat(EmojiChecker.removeEmojis("$tmp$emoji$tmp")).isEqualTo("$tmp$tmp")
     }
 
     @ParameterizedTest
     @MethodSource("emojiProvider")
     @DisplayName("extractEmojis")
     fun extractEmojis(emoji: String) {
-        assertThat(EmojiChecker.extractEmojis("$hello$emoji$hello")).isEqualTo(emoji)
+        assertThat(EmojiChecker.extractEmojis("$tmp$emoji$tmp")).isEqualTo(emoji)
     }
 
     private fun emojiProvider(): List<String> {
