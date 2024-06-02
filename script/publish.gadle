@@ -1,0 +1,14 @@
+ext {
+    PUBLISH_GROUP_ID = 'io.github.hubcreator'
+    PUBLISH_VERSION = '0.0.1'
+    PUBLISH_ARTIFACT_ID = 'emojihub'
+    PUBLISH_DESCRIPTION = 'Emoji validator library'
+    PUBLISH_LICENSE_NAME = 'Apache-2.0'
+    PUBLISH_LICENSE_URL = 'https://spdx.org/licenses/Apache-2.0.html'
+    PUBLISH_DEVELOPER_ID = 'HubCreator'
+    PUBLISH_DEVELOPER_NAME = 'Hyunseung Jung'
+    PUBLISH_DEVELOPER_EMAIL = 'chocomilk8604@gmail.com'
+    PUBLISH_SCM_CONNECTION = 'scm:git:github.com/HubCreator/emojihub.git'
+    PUBLISH_SCM_DEVELOPER_CONNECTION = 'scm:git:ssh://github.com:HubCreator/emojihub.git'
+    PUBLISH_SCM_URL = 'https://github.com/HubCreator/emojihub/tree/master'
+}
